@@ -1,4 +1,3 @@
-// backend/src/api/diary/services/gpt.js
 import OpenAI from "openai";
 
 export default ({ strapi }) => ({
@@ -7,23 +6,34 @@ export default ({ strapi }) => ({
       apiKey: process.env.OPENAI_API_KEY,
     });
 
-    const response = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
+    const response = await client.responses.create({
+      model: "gpt-4o-mini",
+      input: `
+        Return ONLY valid JSON:
+
         {
-          role: "system",
-          content: "あなたは英語の日記を添削する専門家です。",
-        },
-        {
-          role: "user",
-          content: `次の日記を添削してください:\n${content}`,
-        },
-      ],
+          "corrected": "<corrected English text>",
+          "grammar_issues": ["<日本語で短く説明>", "<日本語で短く説明>"],
+          "feedback": "<気をつけるポイントや良かった点などを日本語で説明>",
+        }
+
+        Rules:
+          - JSON 以外を書かない
+          - 不要な文章やmarkdownや---を出さない
+        User text:
+          ${content}`,
     });
 
+    // ← ここが最新の正しいアクセス方法！
+    const text = response.output_text
+
+    const json = JSON.parse(text);
+
     return {
-      corrected: response.choices[0].message.content,
+      corrected: json.corrected,
+      grammar_issues: json.grammar_issues,
+      feedback: json.feedback,
       tokens: response.usage.total_tokens,
     };
-  }
+  },
 });
