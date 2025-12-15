@@ -33,11 +33,8 @@
     "grammar_issues": {
       "type": "json"
     },
-    "users_permissions_users": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "plugin::users-permissions.user",
-      "mappedBy": "diary"
+    "word_count": {
+      "type": "integer"
     }
   }
 }

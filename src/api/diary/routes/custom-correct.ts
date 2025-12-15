@@ -8,5 +8,10 @@ export default {
         auth: false,
       },
     },
+    {
+      method: "GET",
+      path: "/diaries/monthly-word-count",
+      handler: "diary.monthlyWordCount",
+    },
   ],
 };

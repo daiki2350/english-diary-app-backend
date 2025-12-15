@@ -65,12 +65,6 @@
       "target": "plugin::users-permissions.role",
       "inversedBy": "users",
       "configurable": false
-    },
-    "diary": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::diary.diary",
-      "inversedBy": "users_permissions_users"
     }
   }
 }
