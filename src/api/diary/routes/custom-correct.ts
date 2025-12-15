@@ -13,5 +13,10 @@ export default {
       path: "/diaries/monthly-word-count",
       handler: "diary.monthlyWordCount",
     },
+    {
+      method: "GET",
+      path: "/diaries/monthly-level",
+      handler: "diary.monthlyLevel",
+    },
   ],
 };
