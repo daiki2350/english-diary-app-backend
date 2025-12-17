@@ -22,6 +22,17 @@
  */
 
 import { factories } from "@strapi/strapi";
+import { ISSUE_MAP } from "../services/issueMaps";
+
+
+type GrammarIssue = {
+  id: string;
+  type: string;
+  label: string;
+  message: string;
+  example_before?: string;
+  example_after?: string;
+};
 
 export default factories.createCoreController("api::diary.diary", ({ strapi }) => ({
   async correctAndSave(ctx) {
@@ -31,12 +42,19 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       .service("api::diary.gpt")
       .correct(content);
 
+      const issuesWithLabels = result.grammar_issues.map(issue => ({
+        ...issue,
+        label: ISSUE_MAP[issue.type] || issue.type,
+      }));
+
+      console.log(issuesWithLabels)
+
 
     const saved = await strapi.documents("api::diary.diary").create({
       data: {
         content,
         corrected_content: result.corrected,
-        grammar_issues: result.grammar_issues,
+        grammar_issues: issuesWithLabels,
         word_count,
         feedback: result.feedback,
         level: result.cefr,
@@ -124,7 +142,36 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     const avgLevel = reverseLevelMap[rounded];
 
     ctx.body = { level: avgLevel };
+  },
+
+  async recentGrammarIssues(ctx) {
+
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      sort: { createdAt: "desc" },
+      limit: 10,
+      fields: ["grammar_issues"],
+    });
+    const issues = diaries.flatMap(d => d.grammar_issues as GrammarIssue[] || []);
+
+    // 3. カウントする
+    const counter: Record<string, number> = {};
+    for (const issue of issues) {
+      if (!issue.label) continue;
+      counter[issue.label] = (counter[issue.label] || 0) + 1;
+    }
+
+    // 4. 頻度順に並べ替える
+    const sorted = Object.entries(counter)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+
+    const trends = sorted.slice(0,5)
+
+    ctx.body = {
+      trends: trends,
+    };
   }
+
 }));
 
 
