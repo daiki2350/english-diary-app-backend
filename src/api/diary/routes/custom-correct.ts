@@ -18,5 +18,10 @@ export default {
       path: "/diaries/monthly-level",
       handler: "diary.monthlyLevel",
     },
+    {
+      method: "GET",
+      path: "/diaries/recent-grammar-issues",
+      handler: "diary.recentGrammarIssues",
+    },
   ],
 };
