@@ -34,6 +34,16 @@ type GrammarIssue = {
   example_after?: string;
 };
 
+type PreWeeklyLevel = {
+  week: number;
+  avg: number;
+}
+
+type WeeklyLevel = {
+  week: number;
+  avgLevel: string;
+}
+
 export default factories.createCoreController("api::diary.diary", ({ strapi }) => ({
   async correctAndSave(ctx) {
     const { content, word_count } = ctx.request.body;
@@ -95,41 +105,57 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     };
   },
 
-  async monthlyLevel(ctx) {
+  async weeklyLevel(ctx) {
+     const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
+
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth(); // 0–11 → 今月
+    const result = [] as PreWeeklyLevel[];
 
-    const start = new Date(year, month, 1);
-    const end = new Date(year, month + 1, 1);
+    const weeklyLevel = [] as WeeklyLevel[]
 
-    const diaries = await strapi.entityService.findMany("api::diary.diary", {
-      filters: {
-        createdAt: {
-          $gte: start,
-          $lt: end,
+    for (let i = 0; i < WEEK_COUNT; i++) {
+
+      // 今週の開始日と終了日を計算
+      const start = new Date(now);
+      start.setDate(now.getDate() - now.getDay() - (i * 7)); // 日曜始まり
+      start.setHours(0, 0, 0, 0);
+
+      const end = new Date(start);
+      end.setDate(start.getDate() + 7);
+
+      // 週内のデータ取得
+      const diaries = await strapi.entityService.findMany("api::diary.diary", {
+        filters: {
+          createdAt: {
+            $gte: start,
+            $lt: end,
+          },
         },
-      },
-      fields: ["level"],
-    });
-    const levels = diaries.map((diary) => {
-      switch(diary.level) {
-        case 'A1':
-          return 1;
-        case 'A2':
-          return 2;
-        case 'B1':
-          return 3;
-        case 'B2':
-          return 4;
-        case 'C1':
-          return 5;
-        case 'C2':
-          return 6;
+        fields: ["level"],
+      });
+
+      console.log(diaries)
+      if (diaries.length === 0) {
+        result.push({ week: i+1, avg: null });
+        continue;
       }
-    }).filter((n) => n !== undefined);
-    const avg = levels.reduce((sum, n) => sum + n, 0) / levels.length;
+
+      const levelMap = { null:0, A1:1, A2:2, B1:3, B2:4, C1:5, C2:6 };
+      const nums = diaries.map(d => levelMap[d.level]);
+
+      const avg = nums.reduce((a,b)=>a+b,0) / nums.length;
+      const rounded = Math.round(avg);
+
+      result.push({
+        week: i + 1,  // 0 = 今週, 1 = 先週...
+        avg: rounded,
+      });
+    }
+
+    console.log(result)
+
     const reverseLevelMap = {
+      0: null,
       1: "A1",
       2: "A2",
       3: "B1",
@@ -138,10 +164,14 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       6: "C2",
     };
 
-    const rounded = Math.round(avg);
-    const avgLevel = reverseLevelMap[rounded];
+    for(let i=0; i<result.length; i++) {
+      const rounded = Math.round(result[i].avg);
+      const avgLevel = reverseLevelMap[rounded];
+      weeklyLevel.push({week: result[i].week, avgLevel: avgLevel})
+    }
+    
 
-    ctx.body = { level: avgLevel };
+    ctx.body = weeklyLevel
   },
 
   async recentGrammarIssues(ctx) {
@@ -170,6 +200,66 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     ctx.body = {
       trends: trends,
     };
+  },
+
+  async calculateStreak(ctx) {
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      fields: ["createdAt"],
+      sort: ["createdAt:desc"]
+    })
+
+
+    const dates = diaries.map(d => new Date(d.createdAt));
+    const DAY = 1000 * 60 * 60 * 24;
+
+    const normalized = dates
+      .map(d => {
+        const dt = new Date(d);
+        dt.setHours(0, 0, 0, 0); // 時間情報を潰す
+        return dt.getTime();     // number にする
+      });
+
+    // 重複（日付が同じもの）を削除
+    const uniqueDays = Array.from(new Set(normalized)).sort((a, b) => b - a);
+
+    console.log(uniqueDays)
+
+    let streak = 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayTime = today.getTime();
+
+    const yesterday = todayTime - DAY;
+
+    const latest = uniqueDays[0];
+
+    if (latest === todayTime) {
+      streak = 1;
+    }
+  
+    else if (latest === yesterday) {
+      streak = 1;
+    }
+
+    else {
+      streak = 0;
+    }
+
+
+    for (let i = 0; i < uniqueDays.length - 1; i++) {
+      const diffDays = (uniqueDays[i] - uniqueDays[i + 1]) / DAY;
+
+      if (diffDays === 1) {
+        streak++;
+      } else {
+        break;
+      }
+    }
+
+    ctx.body = {
+      streak: streak,
+    }
   }
 
 }));
