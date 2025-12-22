@@ -475,7 +475,7 @@ export interface ApiDiaryDiary extends Struct.CollectionTypeSchema {
     singularName: 'diary';
   };
   options: {
-    draftAndPublish: true;
+    draftAndPublish: false;
   };
   attributes: {
     content: Schema.Attribute.Text;

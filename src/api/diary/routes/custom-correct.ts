@@ -15,13 +15,18 @@ export default {
     },
     {
       method: "GET",
-      path: "/diaries/monthly-level",
-      handler: "diary.monthlyLevel",
+      path: "/diaries/weekly-level",
+      handler: "diary.weeklyLevel",
     },
     {
       method: "GET",
       path: "/diaries/recent-grammar-issues",
       handler: "diary.recentGrammarIssues",
+    },
+    {
+      method: "GET",
+      path: "/diaries/calculate-streak",
+      handler: "diary.calculateStreak",
     },
   ],
 };

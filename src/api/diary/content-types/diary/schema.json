@@ -7,7 +7,7 @@
     "displayName": "Diary"
   },
   "options": {
-    "draftAndPublish": true
+    "draftAndPublish": false
   },
   "pluginOptions": {},
   "attributes": {
