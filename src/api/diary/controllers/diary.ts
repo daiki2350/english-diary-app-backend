@@ -105,8 +105,8 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     };
   },
 
-  async weeklyLevel(ctx) {
-     const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
+  async recentWeeklyLevels(ctx) {
+    const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
 
     const now = new Date();
     const result = [] as PreWeeklyLevel[];
@@ -174,6 +174,51 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     ctx.body = weeklyLevel
   },
 
+  async weeklyLevel(ctx) {
+    const now = new Date();
+
+    // 今週の開始日と終了日を計算
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay()); // 日曜始まり
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+
+    // 週内のデータ取得
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        createdAt: {
+          $gte: start,
+          $lt: end,
+        },
+      },
+      fields: ["level"],
+    });
+    const levelMap = { null:0, A1:1, A2:2, B1:3, B2:4, C1:5, C2:6 };
+    const nums = diaries.map(d => levelMap[d.level]);
+
+    const avg = nums.reduce((a,b)=>a+b,0) / nums.length;
+    const rounded = Math.round(avg);
+
+    const reverseLevelMap = {
+      0: null,
+      1: "A1",
+      2: "A2",
+      3: "B1",
+      4: "B2",
+      5: "C1",
+      6: "C2",
+    };
+
+    const avgLevel = reverseLevelMap[rounded];
+    console.log(avgLevel)
+
+    ctx.body = {
+      avgLevel
+    }
+  },
+
   async recentGrammarIssues(ctx) {
 
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
@@ -183,23 +228,73 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     });
     const issues = diaries.flatMap(d => d.grammar_issues as GrammarIssue[] || []);
 
-    // 3. カウントする
+    // カウントする
     const counter: Record<string, number> = {};
     for (const issue of issues) {
       if (!issue.label) continue;
       counter[issue.label] = (counter[issue.label] || 0) + 1;
     }
 
-    // 4. 頻度順に並べ替える
+    // 頻度順に並べ替える
     const sorted = Object.entries(counter)
       .sort((a, b) => b[1] - a[1])
       .map(([label, count]) => ({ label, count }));
 
+
+    // top5
     const trends = sorted.slice(0,5)
 
     ctx.body = {
       trends: trends,
     };
+  },
+
+  async recentGrammarIssuesDetails(ctx) {
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      sort: { createdAt: "desc" },
+      limit: 10,
+      fields: ["grammar_issues"],
+    });
+    const issues = diaries.flatMap(d => d.grammar_issues as GrammarIssue[] || []);
+
+    // カウントする
+    const counter: Record<string, number> = {};
+    for (const issue of issues) {
+      if (!issue.label) continue;
+      counter[issue.label] = (counter[issue.label] || 0) + 1;
+    }
+
+    // 頻度順に並べ替える
+    const sorted = Object.entries(counter)
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, count]) => ({ label, count }));
+
+    // top5
+    const trends = sorted.slice(0,5)
+
+    const examples: Record<string, { before: string, after: string }> = {};
+
+    for (const trend of trends) {
+        // issues の中からラベルに一致する最初のものを探す
+        const found = issues.find(issue => issue.label === trend.label);
+
+        if (found) {
+            examples[trend.label] = {
+                before: found.example_before ?? "",
+                after: found.example_after ?? ""
+            };
+        } else {
+            examples[trend.label] = {
+                before: "",
+                after: ""
+            };
+        }
+    }
+
+    ctx.body = {
+      trends,
+      examples,
+    }
   },
 
   async calculateStreak(ctx) {
