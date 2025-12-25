@@ -28,5 +28,10 @@ export default {
       path: "/diaries/calculate-streak",
       handler: "diary.calculateStreak",
     },
+    {
+      method: "GET",
+      path: "/diaries/recent-grammar-issues-details",
+      handler: "diary.recentGrammarIssuesDetails",
+    },
   ],
 };
