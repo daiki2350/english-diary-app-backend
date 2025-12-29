@@ -46,6 +46,8 @@ type WeeklyLevel = {
 
 export default factories.createCoreController("api::diary.diary", ({ strapi }) => ({
   async correctAndSave(ctx) {
+    const user = ctx.state.user
+
     const { content, word_count } = ctx.request.body;
 
     const result = await strapi
@@ -58,7 +60,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       }));
 
       console.log(issuesWithLabels)
-
+      console.log(user)
 
     const saved = await strapi.documents("api::diary.diary").create({
       data: {
@@ -70,6 +72,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
         level: result.cefr,
         tokens_used: result.tokens,
         publishedAt: new Date(),
+        users_permissions_user: user.id
       },
     });
 
@@ -77,6 +80,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
   },
 
   async monthlyWordCount(ctx) {
+    const user = ctx.state.user
     const now = new Date();
     const year = now.getFullYear();
     const month = now.getMonth(); // 0–11 → 今月
@@ -86,10 +90,12 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
 
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
       filters: {
+        users_permissions_user: user.id,
         createdAt: {
           $gte: start,
           $lt: end,
         },
+        
       },
       fields: ["word_count"],
     });
@@ -105,7 +111,26 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     };
   },
 
+  async getLastDiary(ctx) {
+    const user = ctx.state.user
+
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id
+      },
+      sort: { createdAt: "desc" },
+      pagination: {
+        page: 1,
+        pageSize: 1,
+      },
+      fields: ["content", "corrected_content", "feedback"],
+    })
+
+    ctx.body = diaries[0] ?? null
+  },
+
   async recentWeeklyLevels(ctx) {
+    const user = ctx.state.user
     const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
 
     const now = new Date();
@@ -126,6 +151,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       // 週内のデータ取得
       const diaries = await strapi.entityService.findMany("api::diary.diary", {
         filters: {
+          users_permissions_user: user.id,
           createdAt: {
             $gte: start,
             $lt: end,
@@ -175,6 +201,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
   },
 
   async weeklyLevel(ctx) {
+    const user = ctx.state.user
     const now = new Date();
 
     // 今週の開始日と終了日を計算
@@ -188,6 +215,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     // 週内のデータ取得
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
       filters: {
+        users_permissions_user: user.id,
         createdAt: {
           $gte: start,
           $lt: end,
@@ -220,10 +248,17 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
   },
 
   async recentGrammarIssues(ctx) {
+    const user = ctx.state.user
 
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id,
+      },
       sort: { createdAt: "desc" },
-      limit: 10,
+      pagination: {
+        page: 10,
+        pageSize: 1,
+      },
       fields: ["grammar_issues"],
     });
     const issues = diaries.flatMap(d => d.grammar_issues as GrammarIssue[] || []);
@@ -250,9 +285,17 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
   },
 
   async recentGrammarIssuesDetails(ctx) {
+    const user = ctx.state.user
+
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id,
+      },
       sort: { createdAt: "desc" },
-      limit: 10,
+      pagination: {
+        page: 1,
+        pageSize: 10,
+      },
       fields: ["grammar_issues"],
     });
     const issues = diaries.flatMap(d => d.grammar_issues as GrammarIssue[] || []);
@@ -298,7 +341,12 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
   },
 
   async calculateStreak(ctx) {
+    const user = ctx.state.user
+
     const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id,
+      },
       fields: ["createdAt"],
       sort: ["createdAt:desc"]
     })
