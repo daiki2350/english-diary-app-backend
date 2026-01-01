@@ -45,6 +45,8 @@ type WeeklyLevel = {
 }
 
 export default factories.createCoreController("api::diary.diary", ({ strapi }) => ({
+
+
   async correctAndSave(ctx) {
     const user = ctx.state.user
 
@@ -58,9 +60,6 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
         ...issue,
         label: ISSUE_MAP[issue.type] || issue.type,
       }));
-
-      console.log(issuesWithLabels)
-      console.log(user)
 
     const saved = await strapi.documents("api::diary.diary").create({
       data: {
@@ -77,6 +76,21 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     });
 
     return saved;
+  },
+
+  async getDiaries(ctx) {
+    const user = ctx.state.user
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id,
+      },
+      sort: {createdAt: "desc"},
+      fields: ["content", "corrected_content", "grammar_issues", "feedback", "level", "date"]
+    })
+
+    ctx.body = {
+      diaries: diaries
+    }
   },
 
   async monthlyWordCount(ctx) {
@@ -131,7 +145,36 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
 
   async recentWeeklyLevels(ctx) {
     const user = ctx.state.user
-    const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
+
+    const diary = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id
+      },
+      sort: { createdAt: "asc" },
+      pagination: {
+        page: 1,
+        pageSize: 1,
+      },
+      fields: ["createdAt"]
+    })
+
+    const first = diary[0].createdAt ?? null
+
+    console.log(first)
+
+    const date = new Date()
+    const firstDay = new Date(first)
+
+    const weeks = Math.floor((date.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24 * 7 ))
+
+    const crossedWeekBoundary = date.getDay() < firstDay.getDay();
+
+    const currentWeek = weeks + (crossedWeekBoundary ? 2 : 1);
+
+    
+    console.log("weeks:", currentWeek)
+
+    const WEEK_COUNT = 12;
 
     const now = new Date();
     const result = [] as PreWeeklyLevel[];
@@ -148,6 +191,12 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       const end = new Date(start);
       end.setDate(start.getDate() + 7);
 
+      const diffWeeks = Math.floor((start.getTime() - firstDay.getTime()) / (1000 * 60 * 60 * 24 * 7 ))
+
+      const weekBoundary = start.getDay() < firstDay.getDay()
+
+      const weekIndex = diffWeeks + (weekBoundary ? 2 : 1)
+
       // 週内のデータ取得
       const diaries = await strapi.entityService.findMany("api::diary.diary", {
         filters: {
@@ -157,12 +206,17 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
             $lt: end,
           },
         },
+        sort: { createdAt: "desc"},
+        pagination: {
+          page: WEEK_COUNT,
+          pageSize: 1,
+        },
         fields: ["level"],
       });
 
       console.log(diaries)
       if (diaries.length === 0) {
-        result.push({ week: i+1, avg: null });
+        result.push({ week: weekIndex, avg: null });
         continue;
       }
 
@@ -173,12 +227,26 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       const rounded = Math.round(avg);
 
       result.push({
-        week: i + 1,  // 0 = 今週, 1 = 先週...
+        week: weekIndex,
         avg: rounded,
       });
     }
 
-    console.log(result)
+    const filteredResult = result.filter((d) => d.avg !== null)
+    filteredResult.reverse()
+
+    if(filteredResult.length < WEEK_COUNT) {
+      for(let i = filteredResult.length + 1; i < WEEK_COUNT + 1; i++) {
+        filteredResult.push({
+          week: i,
+          avg: null
+        })
+      }
+    }
+
+    console.log(filteredResult)
+
+
 
     const reverseLevelMap = {
       0: null,
@@ -191,9 +259,9 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     };
 
     for(let i=0; i<result.length; i++) {
-      const rounded = Math.round(result[i].avg);
+      const rounded = Math.round(filteredResult[i].avg);
       const avgLevel = reverseLevelMap[rounded];
-      weeklyLevel.push({week: result[i].week, avgLevel: avgLevel})
+      weeklyLevel.push({week: filteredResult[i].week, avgLevel: avgLevel})
     }
     
 

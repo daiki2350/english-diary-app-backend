@@ -64,5 +64,13 @@ export default {
         auth: {},
       },
     },
+    {
+        method: "GET",
+        path: "/diaries/getDiaries",
+        handler: "diary.getDiaries",
+        config: {
+            auth: {}
+        }
+    },
   ],
 };
