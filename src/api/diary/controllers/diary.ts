@@ -45,6 +45,8 @@ type WeeklyLevel = {
 }
 
 export default factories.createCoreController("api::diary.diary", ({ strapi }) => ({
+
+
   async correctAndSave(ctx) {
     const user = ctx.state.user
 
@@ -131,6 +133,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
 
   async recentWeeklyLevels(ctx) {
     const user = ctx.state.user
+
     const WEEK_COUNT = 12; //after making user authentication, it needs to compare to created_at in user table.
 
     const now = new Date();
