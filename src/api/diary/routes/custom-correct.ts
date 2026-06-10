@@ -72,5 +72,22 @@ export default {
             auth: {}
         }
     },
+    {
+      method: "POST",
+      path: "/diaries/createDrill",
+      handler: "diary.createDrill",
+      config: {
+        auth: {}
+      }
+    },
+    {
+      
+      method: "GET",
+      path: "/diaries/getDrillLevel",
+      handler: "diary.getDrillLevel",
+      config: {
+        auth: {}
+      }
+    }
   ],
 };

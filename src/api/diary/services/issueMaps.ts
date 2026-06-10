@@ -16,6 +16,7 @@ export const ISSUE_MAP: Record<string, string> = {
   determiner: "限定詞",
   negation: "否定文",
   question_form: "疑問文",
+  verb_form: "動詞の形",
   word_order: "語順",
   parallel_structure: "並列構造",
   ellipsis_substitution: "省略・代用",

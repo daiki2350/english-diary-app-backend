@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "saved_wrong_questions",
+  "info": {
+    "singularName": "saved-wrong-question",
+    "pluralName": "saved-wrong-questions",
+    "displayName": "Saved Wrong Question"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "question": {
+      "type": "string",
+      "required": true
+    },
+    "answer": {
+      "type": "string",
+      "required": true
+    },
+    "genre": {
+      "type": "string",
+      "required": true
+    },
+    "difficulty": {
+      "type": "string",
+      "required": true
+    },
+    "choices": {
+      "type": "json",
+      "required": true
+    },
+    "wrong_count": {
+      "type": "integer",
+      "required": true
+    },
+    "correct_streak": {
+      "type": "integer",
+      "required": false
+    },
+    "last_mistake_at": {
+      "type": "date",
+      "required": true
+    },
+    "learning_status": {
+      "type": "string",
+      "default": "active",
+      "required": true
+    },
+    "users_permissions_user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "saved_wrong_questions"
+    },
+    "explanation": {
+      "type": "string",
+      "required": true
+    }
+  }
+}

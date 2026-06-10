@@ -85,12 +85,13 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
         users_permissions_user: user.id,
       },
       sort: {createdAt: "desc"},
-      fields: ["content", "corrected_content", "grammar_issues", "feedback", "level", "date"]
+      fields: ["content", "corrected_content", "grammar_issues", "feedback", "level", "createdAt"]
     })
 
-    ctx.body = {
-      diaries: diaries
-    }
+    console.log(diaries)
+
+    ctx.body = diaries
+
   },
 
   async monthlyWordCount(ctx) {
@@ -145,6 +146,7 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
 
   async recentWeeklyLevels(ctx) {
     const user = ctx.state.user
+    console.log("user:", ctx.state.user)
 
     const diary = await strapi.entityService.findMany("api::diary.diary", {
       filters: {
@@ -157,6 +159,10 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
       },
       fields: ["createdAt"]
     })
+
+    if (!diary || diary.length === 0) {
+      return []   // or ctx.body = []
+    }
 
     const first = diary[0].createdAt ?? null
 
@@ -471,7 +477,80 @@ export default factories.createCoreController("api::diary.diary", ({ strapi }) =
     ctx.body = {
       streak: streak,
     }
-  }
+  },
+
+  async createDrill(ctx) {
+    const { issues, level } = ctx.request.body
+
+    console.log(level)
+    
+
+    const result = await strapi
+      .service("api::diary.gpt")
+      .createDrill(issues, level);
+
+    console.log(result)
+    return result
+
+    /* const questions = result.map((r) => {
+      return {
+        id: r.id,
+        question: r.question,
+        choices: r.choices,
+        answer: r.answer,
+        genre: ISSUE_MAP[r.genre] || r.genre,
+        hint: r.hint,
+        difficulty: r.difficulty,
+        explanation: r.explanation,
+      };
+    });
+
+    console.log(questions)
+
+    return {
+      questions,
+    }; */
+  },
+
+
+  async getDrillLevel(ctx) {
+    const user = ctx.state.user;
+
+    const LEVEL_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+    const getNextLevel = (level: string) => {
+      const index = LEVEL_ORDER.indexOf(level);
+
+      if (index === -1) return "B1";
+
+      return LEVEL_ORDER[Math.min(index + 1, LEVEL_ORDER.length - 1)];
+    };
+
+    const diaries = await strapi.entityService.findMany("api::diary.diary", {
+      filters: {
+        users_permissions_user: user.id,
+        level: {
+          $notNull: true,
+        },
+      },
+      sort: { createdAt: "desc" },
+      pagination: {
+        page: 1,
+        pageSize: 1,
+      },
+      fields: ["level", "createdAt"],
+    });
+
+    const latestLevel = diaries[0]?.level
+
+    console.log(latestLevel)
+
+
+    ctx.body = {
+      baseLevel: latestLevel,
+      drillLevel: getNextLevel(latestLevel),
+    };
+  },
 
 }));
 
