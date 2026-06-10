@@ -503,6 +503,50 @@ export interface ApiDiaryDiary extends Struct.CollectionTypeSchema {
   };
 }
 
+export interface ApiSavedWrongQuestionSavedWrongQuestion
+  extends Struct.CollectionTypeSchema {
+  collectionName: 'saved_wrong_questions';
+  info: {
+    displayName: 'Saved Wrong Question';
+    pluralName: 'saved-wrong-questions';
+    singularName: 'saved-wrong-question';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    answer: Schema.Attribute.String & Schema.Attribute.Required;
+    choices: Schema.Attribute.JSON & Schema.Attribute.Required;
+    correct_streak: Schema.Attribute.Integer;
+    createdAt: Schema.Attribute.DateTime;
+    createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    difficulty: Schema.Attribute.String & Schema.Attribute.Required;
+    explanation: Schema.Attribute.String & Schema.Attribute.Required;
+    genre: Schema.Attribute.String & Schema.Attribute.Required;
+    last_mistake_at: Schema.Attribute.Date & Schema.Attribute.Required;
+    learning_status: Schema.Attribute.String &
+      Schema.Attribute.Required &
+      Schema.Attribute.DefaultTo<'active'>;
+    locale: Schema.Attribute.String & Schema.Attribute.Private;
+    localizations: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::saved-wrong-question.saved-wrong-question'
+    > &
+      Schema.Attribute.Private;
+    publishedAt: Schema.Attribute.DateTime;
+    question: Schema.Attribute.String & Schema.Attribute.Required;
+    updatedAt: Schema.Attribute.DateTime;
+    updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
+      Schema.Attribute.Private;
+    users_permissions_user: Schema.Attribute.Relation<
+      'manyToOne',
+      'plugin::users-permissions.user'
+    >;
+    wrong_count: Schema.Attribute.Integer & Schema.Attribute.Required;
+  };
+}
+
 export interface PluginContentReleasesRelease
   extends Struct.CollectionTypeSchema {
   collectionName: 'strapi_releases';
@@ -990,6 +1034,10 @@ export interface PluginUsersPermissionsUser
       'manyToOne',
       'plugin::users-permissions.role'
     >;
+    saved_wrong_questions: Schema.Attribute.Relation<
+      'oneToMany',
+      'api::saved-wrong-question.saved-wrong-question'
+    >;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;
@@ -1015,6 +1063,7 @@ declare module '@strapi/strapi' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::diary.diary': ApiDiaryDiary;
+      'api::saved-wrong-question.saved-wrong-question': ApiSavedWrongQuestionSavedWrongQuestion;
       'plugin::content-releases.release': PluginContentReleasesRelease;
       'plugin::content-releases.release-action': PluginContentReleasesReleaseAction;
       'plugin::i18n.locale': PluginI18NLocale;

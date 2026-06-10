@@ -131,4 +131,76 @@ export default ({ strapi }) => ({
       tokens: response.usage.total_tokens,
     };
   },
+
+  async createDrill(issues, level) {
+    const client = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+
+    console.log(level)
+    const label = issues.map((issue) => {
+      return issue.label
+    })
+
+    const response = await client.chat.completions.create({
+      model: 'gpt-4.1-mini',
+      messages: [
+        {
+          role: 'system',
+          content: `
+            あなたは英語学習アプリの練習問題作成APIです。
+            指定された弱点ジャンルに合わせて、英語の4択問題を作ってください。
+            以下のタスクを厳密にこなしてください。
+
+            1. 必ずJSONのみで返す
+            2. Markdownは禁止
+            3. choicesは必ず4つ
+            4. answerはchoicesの中の1つでanswerが必ずchoiceにあることを確認してください
+            5. questionには空欄を "___" で入れる。問題以外は何も返さないでください
+            6. ジャンルは5つあり、各ジャンルから3問だす
+            7. explanationは日本語で書く
+            8. difficultyはCEFR形式で返す
+
+            9. 各問題の "genre" は、必ず以下のリストの中の**1つだけ**を使うこと
+            10. "genre" は配列ではなく**文字列で返すこと**
+            11. 各問題はどのジャンルに属するか明確にすること
+            12. CEFRレベル${level}以上の問題を作成すること
+
+            ジャンル一覧:
+            ${label}
+            JSON形式:
+            {
+              "questions": [
+                {
+                  "id": "q_001",
+                  "question": "問題文",
+                  "choices": ["選択肢1", "選択肢2", "選択肢3", "選択肢4"],
+                  "answer": "正解",
+                  "genre": "前置詞"
+                  "difficulty": "B1",
+                  "hint": "ヒント",
+                  "explanation": "解説"
+                }
+              ]
+            }
+          `
+        },
+        {
+          role: 'user',
+          content: `
+            以下のジャンルから4択の練習問題を作成してください: \n${issues}
+          `
+        }
+      ],
+      response_format: { type: "json_object" }
+    })
+
+    const raw = response.choices[0].message.content
+
+    const result = JSON.parse(raw);
+
+    const questions = result.questions
+
+    return questions
+  }
 });

@@ -1,4 +1,4 @@
-export default () => ({
+export default ({ env }) => ({
     'strapi-v5-http-only-auth': {
     enabled: true,
     config: {
@@ -15,4 +15,17 @@ export default () => ({
       deleteJwtFromResponse: true,
     },
   },
+  email: {
+    config: {
+      provider: "sendgrid",
+      providerOptions: {
+        apiKey: env("SENDGRID_API_KEY"), // Required
+      },
+      settings: {
+        defaultFrom: env("SENDGRID_EMAIL"),
+        defaultReplyTo: env("SENDGRID_EMAIL"),
+      },
+    },
+  },
 });
+
