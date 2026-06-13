@@ -6,8 +6,7 @@ export default ({ env }) => ({
       cookieOptions: {
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        sameSite: 'lax',
-        domain: process.env.CLIENT_DOMAIN || 'localhost',
+        sameSite: 'none',
         path: '/',
       },
       // If set to true, the JWT will be removed from the response
