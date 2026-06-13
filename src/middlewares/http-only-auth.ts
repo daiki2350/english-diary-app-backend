@@ -5,10 +5,14 @@ export default () => {
       ctx.request.headers.authorization = `Bearer ${jwt}`
     }
 
+    ctx.app.proxy = true
+
     await next()
 
     if (ctx.request.url.startsWith('/api/auth')) {
       const jwt = ctx.response.body?.jwt
+
+      ctx.app.proxy = true
 
       console.log("secure", ctx.secure);
       console.log("protocol", ctx.protocol);
