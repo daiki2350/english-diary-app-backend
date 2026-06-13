@@ -18,6 +18,7 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
+  'global::http-only-auth',
 ];
 
 {/*module.exports = [

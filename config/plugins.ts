@@ -1,5 +1,5 @@
 export default ({ env }) => ({
-    'strapi-v5-http-only-auth': {
+    /*'strapi-v5-http-only-auth': {
     enabled: true,
     config: {
       // Default cookie settings
@@ -13,6 +13,9 @@ export default ({ env }) => ({
       // after a successful login or registration
       deleteJwtFromResponse: true,
     },
+  },*/
+  'strapi-v5-http-only-auth': {
+    enabled: false,
   },
   email: {
     config: {
