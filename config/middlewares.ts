@@ -15,6 +15,7 @@ export default [
   'strapi::poweredBy',
   'strapi::query',
   'strapi::body',
+  'global::http-only-auth',
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
