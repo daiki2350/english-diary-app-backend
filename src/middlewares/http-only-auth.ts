@@ -10,6 +10,10 @@ export default () => {
     if (ctx.request.url.startsWith('/api/auth')) {
       const jwt = ctx.response.body?.jwt
 
+      console.log("secure", ctx.secure);
+      console.log("protocol", ctx.protocol);
+      console.log("forwarded", ctx.request.headers["x-forwarded-proto"]);
+
       if (jwt) {
         const isSecure =
           ctx.request.secure ||
